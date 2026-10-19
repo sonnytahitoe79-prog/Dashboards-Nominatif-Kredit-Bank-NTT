@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Nominatif Kredit DMKK - Bank NTT</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --blue:#0b4f9c; --blue2:#1565c0; --teal:#00897b; --orange:#f57c00; --red:#d32f2f; --amber:#ffa000;
+  --bg:#f3f6fb; --card:#ffffff; --text:#1f2a37; --muted:#6b7a90; --line:#e3e9f2;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px}
+header{background:linear-gradient(120deg,var(--blue),var(--blue2) 60%,var(--teal));color:#fff;padding:18px 24px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+header h1{margin:0;font-size:20px;letter-spacing:.5px}
+header h2{margin:2px 0 0;font-size:13px;font-weight:500;opacity:.9}
+header .tag{font-size:11px;opacity:.85;margin-top:4px;letter-spacing:1px}
+.upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{background:var(--orange);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:13px}
+.btn:hover{filter:brightness(1.08)}
+.btn.sec{background:#fff;color:var(--blue);border:1px solid var(--line)}
+.btn.ghost{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4)}
+#status{font-size:12px;opacity:.95}
+main{padding:18px 24px;max-width:1500px;margin:0 auto}
+.filters{background:var(--card);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.06);align-items:end}
+.filters label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;display:block;margin-bottom:4px}
+select,input[type=search]{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff;color:var(--text)}
+.section-title{font-size:15px;font-weight:700;color:var(--blue);margin:22px 0 10px;border-left:4px solid var(--orange);padding-left:10px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.kpi{background:var(--card);border-radius:12px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-top:3px solid var(--blue2)}
+.kpi.t{border-top-color:var(--teal)}.kpi.o{border-top-color:var(--orange)}.kpi.r{border-top-color:var(--red)}.kpi.a{border-top-color:var(--amber)}
+.kpi .lbl{font-size:12px;color:var(--muted);font-weight:600}
+.kpi .val{font-size:22px;font-weight:700;margin-top:6px}
+.kpi .sub{font-size:12px;color:var(--muted);margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:12px}
+.card{background:var(--card);border-radius:12px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.06);min-width:0}
+.card h3{margin:0 0 10px;font-size:12px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
+.chart{position:relative;height:300px}
+.chart.tall{height:420px}
+.full{grid-column:1/-1}
+.chart-scroll{max-height:620px;overflow-y:auto;overflow-x:hidden;padding-right:4px}
+.legend-npl{display:flex;gap:14px;font-size:12px;color:var(--muted);margin:-4px 0 8px}
+.legend-npl i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-2px}
+.hb-head{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;padding:0 2px 6px;border-bottom:1px solid var(--line)}
+.hbars{max-height:420px;overflow-y:auto;padding:6px 4px 0 0}
+.hb-row{padding:8px 2px;border-bottom:1px dashed var(--line)}
+.hb-row:last-child{border-bottom:none}
+.hb-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.hb-lbl{font-size:13px;font-weight:600;line-height:1.3;color:var(--text)}
+.hb-rank{display:inline-block;min-width:20px;color:var(--muted);font-weight:700;font-size:11px}
+.hb-val{font-size:13px;font-weight:700;white-space:nowrap;color:var(--text)}
+.hb-val small{color:var(--muted);font-weight:600;margin-left:4px}
+.hb-track{height:8px;background:#edf1f7;border-radius:5px;margin:6px 0 4px;overflow:hidden}
+.hb-fill{height:100%;border-radius:5px;min-width:3px;transition:width .4s}
+.hb-sub{font-size:11.5px;color:var(--muted)}
+.hb-sub .bad{color:#c62828;font-weight:700}
+.tbl-wrap{overflow:auto;max-height:520px;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:#eaf1fb;color:var(--blue);position:sticky;top:0;cursor:pointer;text-align:left;font-weight:700;z-index:1}
+td.n,th.n{text-align:right}
+tbody tr:hover{background:#f7faff}
+tfoot td{font-weight:700;background:#f4f7fb;position:sticky;bottom:0}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.toolbar .grow{flex:1;min-width:200px}
+.pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;color:#fff}
+.k1{background:#2e7d32}.k2{background:#f9a825}.k3{background:#ef6c00}.k4{background:#d84315}.k5{background:#b71c1c}.k0{background:#90a4ae}
+.pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:8px;font-size:12px;color:var(--muted)}
+.empty{text-align:center;padding:70px 20px;background:var(--card);border-radius:12px;margin-top:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.empty .ico{font-size:48px}
+.empty p{color:var(--muted);max-width:640px;margin:10px auto 18px;line-height:1.5}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:24px}
+.hidden{display:none!important}
+.warn{background:#fff8e1;border:1px solid #ffe082;color:#7a5a00;border-radius:8px;padding:8px 12px;font-size:12px;margin-top:10px}
+@media(max-width:600px){main{padding:12px}header{padding:14px 16px}.grid{grid-template-columns:1fr}.chart{height:260px}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>DASHBOARD NOMINATIF KREDIT DMKK</h1>
+    <h2>PT. BANK PEMBANGUNAN DAERAH NUSA TENGGARA TIMUR</h2>
+    <div class="tag">MIKRO, KECIL &amp; KONSUMER, BERSAMA TUMBUH!</div>
+  </div>
+  <div class="upload">
+    <input type="file" id="file" accept=".xlsx,.xls,.csv" hidden>
+    <button class="btn" onclick="document.getElementById('file').click()">📤 Upload / Update Data Excel</button>
+    <button class="btn ghost" id="btnClear" title="Hapus data tersimpan di perangkat ini">🗑️</button>
+    <div id="status">Belum ada data dimuat</div>
+  </div>
+</header>
+
+<main>
+  <div id="emptyState" class="empty">
+    <div class="ico">📁</div>
+    <h2>Belum Ada Data Dimuat</h2>
+    <p>Upload file Excel nominatif kredit (export T24, satu baris per rekening, dengan kolom seperti CABANG, CAPEM, PRODUCT, KOLEKTIBILITAS, PLAFON_PINJAMAN, BAKI_DEBET, NILAI_WAJAR, TOT_HARI_TUNGGAK, dst). Data diproses dan disimpan hanya di perangkat ini, tidak diunggah ke server manapun.</p>
+    <button class="btn" onclick="document.getElementById('file').click()">📤 Upload Data Excel</button>
+  </div>
+
+  <div id="dash" class="hidden">
+    <div class="filters">
+      <div><label>Cabang</label><select id="fCabang"></select></div>
+      <div><label>Capem</label><select id="fCapem"></select></div>
+      <div><label>Produk</label><select id="fProduk"></select></div>
+      <div><label>Sub Produk</label><select id="fSubProduk"></select></div>
+      <div><label>Periode Pencairan</label><select id="fSem"></select></div>
+      <div><label>Kolektibilitas</label><select id="fKol"></select></div>
+      <div><label>Nilai Wajar</label><select id="fNW"><option value="">Semua Rekening</option><option value="POS">Nilai Wajar &gt; 0</option><option value="ZERO">Nilai Wajar = 0</option></select></div>
+      <div><label>Restrukturisasi</label><select id="fRestruk"><option value="">Semua</option><option value="Y">Restruk</option><option value="N">Non Restruk</option></select></div>
+      <div><label>Periode Data</label><div id="periode" style="font-weight:700;padding:8px 0">-</div></div>
+      <div><button class="btn sec" id="btnReset" style="width:100%">↺ Reset Filter</button></div>
+    </div>
+    <div id="warnBox" class="warn hidden"></div>
+
+    <div class="section-title">Ringkasan Nominatif</div>
+    <div class="kpis">
+      <div class="kpi"><div class="lbl">💰 Total Plafon</div><div class="val" id="kPlafon">-</div><div class="sub" id="kPlafonSub"></div></div>
+      <div class="kpi t"><div class="lbl">📊 Baki Debet</div><div class="val" id="kBD">-</div><div class="sub" id="kBDSub"></div></div>
+      <div class="kpi t"><div class="lbl">📈 Nilai Wajar</div><div class="val" id="kNW">-</div><div class="sub" id="kNWSub"></div></div>
+      <div class="kpi"><div class="lbl">🧾 NOA (Rekening)</div><div class="val" id="kNOA">-</div><div class="sub" id="kNOASub"></div></div>
+      <div class="kpi r"><div class="lbl">🚨 NPL (Kol 3–5)</div><div class="val" id="kNPL">-</div><div class="sub" id="kNPLSub"></div></div>
+      <div class="kpi a"><div class="lbl">⚠️ DPK (Kol 2)</div><div class="val" id="kDPK">-</div><div class="sub" id="kDPKSub"></div></div>
+      <div class="kpi o"><div class="lbl">⏳ Total Tunggakan</div><div class="val" id="kTung">-</div><div class="sub" id="kTungSub"></div></div>
+      <div class="kpi o"><div class="lbl">🔁 Debitur Restruk</div><div class="val" id="kRes">-</div><div class="sub" id="kResSub"></div></div>
+    </div>
+
+    <div class="section-title">Kualitas Kredit</div>
+    <div class="grid">
+      <div class="card"><h3>Komposisi Kolektibilitas (Baki Debet)</h3><div class="chart"><canvas id="cKol"></canvas></div></div>
+      <div class="card"><h3>Sebaran Hari Tunggakan (DPD) — Baki Debet</h3><div class="chart"><canvas id="cDPD"></canvas></div></div>
+      <div class="card full"><h3>Rasio NPL per Unit Kerja (Tertinggi ke Terendah)</h3><div class="legend-npl"><span><i style="background:#c62828"></i>≥ 5%</span><span><i style="background:#f57c00"></i>3% – &lt;5%</span><span><i style="background:#00897b"></i>&lt; 3%</span></div><div class="chart-scroll"><div class="chart" id="wNPL"><canvas id="cNPLCab"></canvas></div></div></div>
+    </div>
+
+    <div class="section-title">Komposisi Produk &amp; Sektor</div>
+    <div class="grid">
+      <div class="card"><h3>Baki Debet per Sub Produk</h3><div class="hb-head"><span>Sub Produk</span><span>Baki Debet · Porsi</span></div><div class="hbars" id="cProduk"></div></div>
+      <div class="card"><h3>Baki Debet per Sektor Ekonomi</h3><div class="hb-head"><span>Sektor Ekonomi</span><span>Baki Debet · Porsi</span></div><div class="hbars" id="cSektor"></div></div>
+    </div>
+
+    <div class="section-title">Sebaran Cabang</div>
+    <div class="grid">
+      <div class="card full"><h3>Plafon &amp; Baki Debet per Unit Kerja (Terbesar ke Terkecil)</h3><div class="chart-scroll"><div class="chart" id="wCab"><canvas id="cCabang"></canvas></div></div></div>
+    </div>
+
+    <div class="section-title">Tren Pencairan &amp; Jatuh Tempo</div>
+    <div class="grid">
+      <div class="card"><h3>Plafon Pencairan per Bulan (24 Bulan Terakhir)</h3><div class="chart"><canvas id="cTren"></canvas></div></div>
+      <div class="card"><h3>Baki Debet Jatuh Tempo (12 Bulan ke Depan)</h3><div class="chart"><canvas id="cJT"></canvas></div></div>
+    </div>
+
+    <div class="section-title">Rekapitulasi</div>
+    <div class="card">
+      <div class="toolbar">
+        <label style="font-size:12px;color:var(--muted);font-weight:600">Rekap per:</label>
+        <select id="rekapBy" style="width:auto">
+          <option value="cabang">Cabang</option>
+          <option value="capem">Capem</option>
+          <option value="produk">Produk</option>
+          <option value="subProduk">Sub Produk</option>
+          <option value="ao">Kode AO</option>
+          <option value="sektor">Sektor Ekonomi</option>
+          <option value="asuransi">Asuransi</option>
+        </select>
+        <span class="grow"></span>
+        <button class="btn sec" id="btnExpRekap">⬇️ Export Rekap</button>
+      </div>
+      <div class="tbl-wrap"><table id="tRekap"></table></div>
+    </div>
+
+    <div class="section-title">Detail Debitur (Sesuai Filter)</div>
+    <div class="card">
+      <div class="toolbar">
+        <input type="search" id="q" class="grow" placeholder="Cari nama / rekening / CIF / NIK / kode AO…">
+        <select id="quick" style="width:auto">
+          <option value="">Semua rekening</option>
+          <option value="tunggak">Ada tunggakan</option>
+          <option value="npl">NPL saja</option>
+          <option value="dpk">DPK saja</option>
+          <option value="jt">Jatuh tempo ≤ 90 hari</option>
+          <option value="lewatjt">Lewat jatuh tempo</option>
+        </select>
+        <button class="btn sec" id="btnExpDetail">⬇️ Export Detail</button>
+      </div>
+      <div class="tbl-wrap"><table id="tDetail"></table></div>
+      <div class="pager"><span id="pInfo"></span><button class="btn sec" id="pPrev">‹</button><button class="btn sec" id="pNext">›</button></div>
+    </div>
+  </div>
+</main>
+<footer>Aplikasi internal Bank NTT — Divisi Kredit Mikro, Kecil &amp; Konsumer (DMKK)</footer>
+
+<script>
+/* ================= UTIL ================= */
+const $ = id => document.getElementById(id);
+const COLORS = ['#1565c0','#00897b','#f57c00','#6a1b9a','#c62828','#2e7d32','#0097a7','#ef6c00','#5d4037','#455a64','#ad1457','#9e9d24','#3949ab','#00796b','#e64a19','#7cb342'];
+const KOLC = {1:'#2e7d32',2:'#f9a825',3:'#ef6c00',4:'#d84315',5:'#b71c1c',0:'#90a4ae'};
+const KOLN = {1:'Lancar',2:'DPK',3:'Kurang Lancar',4:'Diragukan',5:'Macet',0:'Tidak Diketahui'};
+const fmtN = n => (n||0).toLocaleString('id-ID');
+const fmtRp = n => 'Rp ' + Math.round(n||0).toLocaleString('id-ID');
+function fmtC(n){ n=n||0; const a=Math.abs(n);
+  if(a>=1e12) return 'Rp '+(n/1e12).toLocaleString('id-ID',{maximumFractionDigits:2})+' T';
+  if(a>=1e9)  return 'Rp '+(n/1e9).toLocaleString('id-ID',{maximumFractionDigits:2})+' M';
+  if(a>=1e6)  return 'Rp '+(n/1e6).toLocaleString('id-ID',{maximumFractionDigits:2})+' jt';
+  return fmtRp(n); }
+const pct = (a,b) => b ? (a/b*100) : 0;
+const fmtP = v => v.toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';
+const s = v => (v==null?'':String(v)).trim();
+
+function num(v){
+  if(v==null||v==='') return 0;
+  if(typeof v==='number') return isFinite(v)?v:0;
+  let t=String(v).replace(/[^\d,.\-]/g,'');
+  if(!t) return 0;
+  const lc=t.lastIndexOf(','), ld=t.lastIndexOf('.');
+  if(lc>-1 && ld>-1){ if(lc>ld) t=t.replace(/\./g,'').replace(',','.'); else t=t.replace(/,/g,''); }
+  else if(lc>-1){ t = (t.split(',').length===2 && t.split(',')[1].length<=2) ? t.replace(',','.') : t.replace(/,/g,''); }
+  else if(ld>-1 && (t.split('.').length>2 || /^\-?\d{1,3}\.\d{3}$/.test(t))) t=t.replace(/\./g,'');
+  const n=parseFloat(t); return isFinite(n)?n:0;
+}
+function dt(v){
+  if(v==null||v==='') return null;
+  if(v instanceof Date) return isNaN(v)?null:v;
+  if(typeof v==='number'){
+    if(v>19000000 && v<21000000){ const y=Math.floor(v/1e4),m=Math.floor(v/100)%100,d=v%100; return new Date(y,m-1,d); }
+    if(v>20000 && v<80000){ const d=new Date(Math.round((v-25569)*864e5)); return new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()); }
+    return null;
+  }
+  const t=String(v).trim();
+  let m;
+  if(m=t.match(/^(\d{4})(\d{2})(\d{2})$/)) return new Date(+m[1],+m[2]-1,+m[3]);
+  if(m=t.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/)) return new Date(+m[1],+m[2]-1,+m[3]);
+  if(m=t.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/)){ let y=+m[3]; if(y<100) y+=2000; return new Date(y,+m[2]-1,+m[1]); }
+  const MON={JAN:0,FEB:1,MAR:2,APR:3,MAY:4,MEI:4,JUN:5,JUL:6,AUG:7,AGU:7,AGT:7,SEP:8,OCT:9,OKT:9,NOV:10,DEC:11,DES:11};
+  if(m=t.match(/^(\d{1,2})[\s\-]([A-Za-z]{3})[A-Za-z]*[\s\-](\d{2,4})/)){ const mo=MON[m[2].toUpperCase()]; if(mo!=null){ let y=+m[3]; if(y<100) y+=2000; return new Date(y,mo,+m[1]); } }
+  const d=new Date(t); return isNaN(d)?null:d;
+}
+const fmtD = d => d ? d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '-';
+function kol(v){ const m=s(v).match(/[1-5]/); return m?+m[0]:0; }
+const yes = v => /^(Y|YA|YES|TRUE|1)\b/i.test(s(v));
+
+/* ================= DATA ================= */
+let DATA=[], FILT=[], periodeTxt='-', charts={};
+
+function pick(r, ...keys){ for(const k of keys){ if(r[k]!==undefined && r[k]!==null && s(r[k])!=='') return r[k]; } return ''; }
+
+/* ===== Sektor Ekonomi — skema LAPORAN KUR resmi (sumber: se.xlsx, sheet Rekap) =====
+   Kode SEKTOR_EKONOMI dicocokkan dulu ke rentang SANDI REFERENSI T24, lalu ke SANDI REFERENSI KRP. */
+const SEKTOR_NAMA={"01": "Pertanian, Perburuan dan Kehutanan", "02": "Perikanan", "03": "Pertambangan dan Penggalian", "04": "Industri Pengolahan", "05": "Listrik, Gas, dan Air", "06": "Konstruksi", "07": "Perdagangan", "08": "Penyediaan Akomodasi dan Penyediaan Makanan", "09": "Transportasi, Pergudangan, dan Komunikasi", "10": "Perantara Keuangan", "11": "Real Estate, Usaha Persewaan, dan Jasa Perusahaan", "12": "Administrasi Pemerintahan, Pertanahan, dan Jaminan Sosial Wajib", "13": "Jasa Pendidikan", "14": "Jasa Kesehatan dan Kegiatan Sosial", "15": "Jasa Kemasyarakatan, Sosial Budaya, Hiburan dan Perorangan Lainnya", "16": "Jasa Perorangan yang Melayani Rumah Tangga", "17": "Badan Internasional dan Bdan Ekstra Internasional Lainnya", "18": "Kegiatan yang belum jelas batasannya", "19": "Pariwisata"};
+const SEKTOR_T24=[[11110, 20500, "01"], [50111, 50590, "02"], [101000, 142900, "03"], [151110, 372000, "04"], [401001, 410000, "05"], [451001, 455000, "06"], [501000, 549000, "07"], [551100, 552100, "08"], [601000, 644000, "09"], [651000, 672000, "10"], [701001, 702000, "11"], [711100, 749009, "11"], [751000, 753000, "12"], [801000, 804000, "13"], [851001, 853000, "14"], [900000, 930000, "15"], [950000, 950000, "16"], [990000, 990000, "17"], [1, 9000, "18"], [703000, 703000, "19"]];
+const SEKTOR_KRP=[[11110, 24000, "01"], [31111, 32600, "02"], [50000, 99000, "03"], [101000, 330000, "04"], [351001, 390000, "05"], [410111, 439090, "06"], [451000, 479900, "07"], [551100, 561009, "08"], [491000, 530000, "09"], [580000, 639900, "09"], [641000, 662000, "10"], [681101, 681109, "11"], [681300, 829000, "11"], [841000, 843000, "12"], [851000, 855000, "13"], [861000, 870000, "14"], [900001, 960009, "15"], [970000, 970000, "16"], [990000, 990000, "17"], [1110, 9000, "18"], [681200, 681200, "19"]];
+function lookupRange(code, ranges){ for(const [a,b,k] of ranges){ if(code>=a && code<=b) return k; } return null; }
+function sektorKodeGrup(code){ if(code===null||code===undefined||s(code)==='') return null; const n=parseFloat(String(code).replace(/[^\d.]/g,'')); if(isNaN(n)) return null; return lookupRange(n,SEKTOR_T24)||lookupRange(n,SEKTOR_KRP); }
+function sektorGroup(code){ const k=sektorKodeGrup(code); return k ? SEKTOR_NAMA[k] : 'Lainnya (Kode Tidak Dikenal)'; }
+
+let DROPPED=0, RAWN=0;
+/* "ID0011005-1005-WAINGAPU" → "WAINGAPU"; "ID0011001-CABANG UTAMA KUPANG" → "CABANG UTAMA KUPANG" */
+const unitName = v => s(v).replace(/^[A-Z]{0,3}\d+\s*[-–.]\s*(\d+\s*[-–.]\s*)?/i,'').trim() || s(v);
+const norm = v => s(v).replace(/[\u00A0\s]+/g,' ').toUpperCase();
+function transform(rows){
+  DROPPED=0; RAWN=rows.length;
+  return rows.map(r0=>{
+    const r={}; for(const k in r0) r[k.trim().toUpperCase().replace(/\s+/g,'_')]=r0[k];
+    const tp=num(r.TOTAL_TUNGGAKAN_POKOK), tb=num(r.TOTAL_TUNGGAKAN_BUNGA);
+    return {
+      cabang: unitName(pick(r,'CABANG','CABANG_1','KODE_CABANG'))||'(Tanpa Cabang)',
+      capem: unitName(r.CAPEM)||'(Kantor Cabang)',
+      kodeCab: s(r.KODE_CABANG), kode: s(r.KODE),
+      rek: s(r.REKENING_PINJAMAN), rekLama: s(r.REKENING_PINJAMAN_LAMA), cif: s(r.CIF),
+      nama: s(r.NAMA_NASABAH), nik: s(r.NIK), alamat: s(r.ALAMAT),
+      produk: norm(r.PRODUCT)||'(Tanpa Produk)', subProduk: norm(r.SUB_PRODUK)||'(Tanpa Sub Produk)', status: s(r.STATUS),
+      kol: kol(r.KOLEKTIBILITAS), ao: s(r.KODE_AO)||'(Tanpa AO)',
+      tglAwal: dt(r.TGL_AWAL_PINJAMAN), tglMulai: dt(r.TGL_MULAI), tglJT: dt(r.TGL_JATUH_TEMPO),
+      _rawAwal: r.TGL_AWAL_PINJAMAN, _rawMulai: r.TGL_MULAI,
+      bunga: num(r.SUKU_BUNGA),
+      plafon: num(r.PLAFON_PINJAMAN), sisa: num(r.SISA_POKOK), bd: num(r.BAKI_DEBET), nw: num(r.NILAI_WAJAR),
+      tp, tb, tung: tp+tb, accrue: num(r.BUNGA_ACCRUE),
+      dpd: num(r.TOT_HARI_TUNGGAK),
+      sektorKode: s(r.SEKTOR_EKONOMI), sektor: sektorGroup(s(r.SEKTOR_EKONOMI)===''?null:r.SEKTOR_EKONOMI), instansi: s(r.INSTANSI),
+      restruk: yes(r.DEBITUR_RESTRUK), caraRestruk: s(r.CARA_RESTRUK),
+      asuransi: s(r.NAMA_ASURANSI)||'(Tanpa Asuransi)', ijp: num(r.NILAI_IJP),
+      sumberDana: s(r.SUMBER_DANA), golongan: s(r.GOLONGAN_KREDIT)
+    };
+  }).filter(x=>{ const ok=x.rek||x.cif||x.plafon||x.bd; if(!ok) DROPPED++; return ok; }).map(x=>{
+    x.tglCair = (x.tglAwal&&x.tglMulai) ? (x.tglMulai>x.tglAwal?x.tglMulai:x.tglAwal) : (x.tglAwal||x.tglMulai);
+    return x; });
+}
+/* Periode data: dari nama file (mis. LOAN16-18102026 → 18 Okt 2026); fallback tanggal cair terakhir */
+function periodeFromName(name){
+  const m=[...String(name).matchAll(/(\d{2})(\d{2})(20\d{2})/g)].pop();
+  if(m){ const d=new Date(+m[3],+m[2]-1,+m[1]); if(d.getMonth()===+m[2]-1) return d; }
+  const m2=String(name).match(/(20\d{2})[-_]?(\d{2})[-_]?(\d{2})/); if(m2) return new Date(+m2[1],+m2[2]-1,+m2[3]);
+  return null;
+}
+
+$('file').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  $('status').textContent='⏳ Membaca '+f.name+' …';
+  const rd=new FileReader();
+  rd.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});
+      let rows=[];
+      wb.SheetNames.forEach(n=>{
+        fixRef(wb.Sheets[n]);
+        const sh=XLSX.utils.sheet_to_json(wb.Sheets[n],{defval:''});
+        if(sh.length && Object.keys(sh[0]).some(k=>/BAKI_DEBET|PLAFON_PINJAMAN|REKENING_PINJAMAN/i.test(k))) rows=rows.concat(sh);
+      });
+      if(!rows.length) throw new Error('Kolom BAKI_DEBET / PLAFON_PINJAMAN / REKENING_PINJAMAN tidak ditemukan.');
+      DATA=transform(rows);
+      const today=new Date(); today.setHours(23,59,59);
+      const maxD=DATA.reduce((m,x)=>x.tglCair&&x.tglCair<=today&&(!m||x.tglCair>m)?x.tglCair:m,null);
+      const pf=periodeFromName(f.name);
+      periodeTxt = pf ? 'Posisi '+fmtD(pf) : (maxD ? 'Pencairan terakhir '+fmtD(maxD) : '-');
+      const nA=DATA.filter(x=>x.tglAwal).length, nM=DATA.filter(x=>x.tglMulai).length;
+      const badA=DATA.find(x=>!x.tglAwal && s(x._rawAwal)!=='');
+      DATA.forEach(x=>{delete x._rawAwal; delete x._rawMulai;});
+      const meta={file:f.name, loaded:new Date().toISOString(), periode:periodeTxt,
+        rowInfo:`Baris terbaca dari Excel: ${fmtN(RAWN)} · dipakai ${fmtN(DATA.length)}`+(DROPPED?` · ${fmtN(DROPPED)} baris diabaikan karena REKENING, CIF, PLAFON dan BAKI DEBET semuanya kosong`:''),
+        dateInfo:`TGL_AWAL_PINJAMAN terbaca ${fmtN(nA)} dari ${fmtN(DATA.length)} rekening, TGL_MULAI ${fmtN(nM)}`+(badA?` · contoh nilai tak terbaca: "${s(badA._rawAwal)}"`:'')+(maxD?` · pencairan terakhir ${fmtD(maxD)}`:'')};
+      saveDB(DATA,meta);
+      start(meta);
+    }catch(err){ alert('Gagal membaca file: '+err.message); $('status').textContent='❌ Gagal memuat data'; }
+    e.target.value='';
+  };
+  rd.readAsArrayBuffer(f);
+});
+
+/* Batas area data (!ref) di file export kadang salah → hitung ulang dari sel yang benar-benar ada */
+function fixRef(ws){
+  let r1=1e9,c1=1e9,r2=-1,c2=-1;
+  for(const k in ws){ if(k[0]==='!') continue; const a=XLSX.utils.decode_cell(k); if(a.r<r1)r1=a.r; if(a.c<c1)c1=a.c; if(a.r>r2)r2=a.r; if(a.c>c2)c2=a.c; }
+  if(r2>=0) ws['!ref']=XLSX.utils.encode_range({s:{r:r1,c:c1},e:{r:r2,c:c2}});
+}
+/* ---------- IndexedDB (simpan lokal) ---------- */
+function idb(){ return new Promise((res,rej)=>{ try{ const q=indexedDB.open('nominatifDMKK',1); q.onupgradeneeded=()=>q.result.createObjectStore('s'); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error);}catch(e){rej(e);} }); }
+async function saveDB(data,meta){ try{ const db=await idb(); const tx=db.transaction('s','readwrite'); tx.objectStore('s').put({data,meta},'last'); }catch(e){} }
+async function loadDB(){ try{ const db=await idb(); return await new Promise(res=>{ const q=db.transaction('s').objectStore('s').get('last'); q.onsuccess=()=>res(q.result); q.onerror=()=>res(null); }); }catch(e){ return null; } }
+async function clearDB(){ try{ const db=await idb(); db.transaction('s','readwrite').objectStore('s').delete('last'); }catch(e){} }
+$('btnClear').onclick=async()=>{ if(!confirm('Hapus data tersimpan di perangkat ini?')) return; await clearDB(); location.reload(); };
+
+/* ================= FILTER ================= */
+function opts(sel, vals, allLbl){ const cur=sel.value; sel.innerHTML='<option value="">'+allLbl+'</option>'+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join(''); if(vals.includes(cur)) sel.value=cur; }
+const esc = t => String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uniq = arr => [...new Set(arr)].sort((a,b)=>a.localeCompare(b,'id'));
+
+function buildFilters(){
+  opts($('fCabang'), uniq(DATA.map(x=>x.cabang)), 'Semua Cabang');
+  refreshCapem();
+  opts($('fProduk'), uniq(DATA.map(x=>x.produk)), 'Semua Produk');
+  refreshSub();
+  const sems=[...new Set(DATA.filter(x=>x.tglCair).map(semKey))].sort().reverse(), yrs=[...new Set(sems.map(k=>k.slice(0,4)))];
+  const hasNo=DATA.some(x=>!x.tglCair);
+  $('fSem').innerHTML='<option value="">Semua Periode</option>'+yrs.map(y=>`<optgroup label="Tahun ${y}"><option value="Y${y}">Tahun ${y} (Jan–Des)</option>`+sems.filter(k=>k.startsWith(y)).map(k=>`<option value="${k}">${semLbl(k)}</option>`).join('')+'</optgroup>').join('')+(hasNo?'<option value="NONE">(Tanggal cair kosong)</option>':'');
+  $('fKol').innerHTML='<option value="">Semua Kol</option><option value="PL">Performing (1–2)</option><option value="NPL">NPL (3–5)</option>'+[1,2,3,4,5].map(k=>`<option value="${k}">Kol ${k} – ${KOLN[k]}</option>`).join('');
+}
+const semKey = x => x.tglCair.getFullYear()+'-S'+(x.tglCair.getMonth()<6?1:2);
+const semLbl = k => (k.endsWith('S1')?'Semester I ':'Semester II ')+k.slice(0,4)+(k.endsWith('S1')?' (Jan–Jun)':' (Jul–Des)');
+/* Sub produk KI/KMK: "KMK.KUR", "KI KUR", "KUR-KMK" → jenis + nama dasar */
+function subSplit(v){ const t=s(v).toUpperCase(); let m;
+  if(m=t.match(/^(KI|KMK)[\s._\-\/]+(.+)$/)) return {jenis:m[1],base:m[2].trim()};
+  if(m=t.match(/^(.+?)[\s._\-\/]+(KI|KMK)$/)) return {jenis:m[2],base:m[1].trim()};
+  return null; }
+function refreshSub(){
+  const sel=$('fSubProduk'), cur=sel.value, p=$('fProduk').value;
+  const subs=uniq(DATA.filter(x=>!p||x.produk===p).map(x=>x.subProduk));
+  const g=new Map(); subs.forEach(v=>{ const k=subSplit(v); if(k){ if(!g.has(k.base)) g.set(k.base,new Set()); g.get(k.base).add(k.jenis);} });
+  const combos=[...g].filter(([,j])=>j.has('KI')&&j.has('KMK')).map(([b])=>b).sort();
+  const vals=combos.map(b=>'G:'+b).concat(subs);
+  sel.innerHTML='<option value="">Semua Sub Produk</option>'
+    +(combos.length?'<optgroup label="Gabungan KI + KMK">'+combos.map(b=>`<option value="G:${esc(b)}">KI + KMK ${esc(b)}</option>`).join('')+'</optgroup><optgroup label="Per Sub Produk">':'')
+    +subs.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')+(combos.length?'</optgroup>':'');
+  if(vals.includes(cur)) sel.value=cur;
+}
+function subMatch(x,sp){ if(!sp) return true; if(sp.startsWith('G:')){ const k=subSplit(x.subProduk); return !!k && k.base===sp.slice(2); } return x.subProduk===sp; }
+function refreshCapem(){ const c=$('fCabang').value; opts($('fCapem'), uniq(DATA.filter(x=>!c||x.cabang===c).map(x=>x.capem)), 'Semua Capem'); }
+['fCabang','fCapem','fProduk','fSubProduk','fSem','fKol','fRestruk','fNW'].forEach(id=>$(id).addEventListener('change',()=>{ if(id==='fCabang') refreshCapem(); if(id==='fProduk') refreshSub(); apply(); }));
+$('btnReset').onclick=()=>{ ['fCabang','fProduk','fSem','fKol','fRestruk','fNW'].forEach(id=>$(id).value=''); refreshCapem(); $('fCapem').value=''; refreshSub(); $('fSubProduk').value=''; apply(); };
+
+function apply(){
+  const c=$('fCabang').value, p=$('fCapem').value, pr=$('fProduk').value, sp=$('fSubProduk').value, sm=$('fSem').value, nwf=$('fNW').value, k=$('fKol').value, r=$('fRestruk').value;
+  FILT=DATA.filter(x=>(!c||x.cabang===c)&&(!p||x.capem===p)&&(!pr||x.produk===pr)&&subMatch(x,sp)&&(!nwf||(nwf==='ZERO'?!x.nw:x.nw>0))
+    &&(!sm||(sm==='NONE'?!x.tglCair:x.tglCair&&(sm[0]==='Y'?String(x.tglCair.getFullYear())===sm.slice(1):semKey(x)===sm)))
+    &&(!k||(k==='PL'?(x.kol===1||x.kol===2):k==='NPL'?x.kol>=3:x.kol===+k))
+    &&(!r||(r==='Y'?x.restruk:!x.restruk)));
+  render();
+}
+
+/* ================= RENDER ================= */
+function sum(a,f){ let t=0; for(const x of a) t+=f(x); return t; }
+function group(a,key){ const m=new Map(); for(const x of a){ const g=typeof key==='function'?key(x):x[key]; if(!m.has(g)) m.set(g,[]); m.get(g).push(x);} return m; }
+
+function render(){
+  const F=FILT, bd=sum(F,x=>x.bd), pl=sum(F,x=>x.plafon), nw=sum(F,x=>x.nw);
+  const npl=F.filter(x=>x.kol>=3), dpk=F.filter(x=>x.kol===2), tg=F.filter(x=>x.tung>0), rs=F.filter(x=>x.restruk);
+  const nplBD=sum(npl,x=>x.bd), dpkBD=sum(dpk,x=>x.bd);
+  const nDeb=new Set(F.map(x=>x.cif||x.rek)).size;
+  $('kPlafon').textContent=fmtC(pl); $('kPlafonSub').textContent='Rata-rata '+fmtC(F.length?pl/F.length:0)+' / NOA';
+  $('kBD').textContent=fmtC(bd); $('kBDSub').textContent=fmtP(pct(bd,pl))+' dari plafon';
+  $('kNW').textContent=fmtC(nw); $('kNWSub').textContent='Adj. nilai wajar '+fmtC(nw-bd);
+  $('kNOA').textContent=fmtN(F.length); $('kNOASub').textContent=fmtN(nDeb)+' debitur (CIF unik)';
+  $('kNPL').textContent=fmtP(pct(nplBD,bd)); $('kNPLSub').textContent=fmtC(nplBD)+' · '+fmtN(npl.length)+' NOA';
+  $('kDPK').textContent=fmtP(pct(dpkBD,bd)); $('kDPKSub').textContent=fmtC(dpkBD)+' · '+fmtN(dpk.length)+' NOA';
+  $('kTung').textContent=fmtC(sum(F,x=>x.tung)); $('kTungSub').textContent='Pokok '+fmtC(sum(F,x=>x.tp))+' · Bunga '+fmtC(sum(F,x=>x.tb))+' · '+fmtN(tg.length)+' NOA';
+  $('kRes').textContent=fmtN(rs.length)+' NOA'; $('kResSub').textContent='Baki debet '+fmtC(sum(rs,x=>x.bd))+' ('+fmtP(pct(sum(rs,x=>x.bd),bd))+')';
+
+  // Kolektibilitas
+  const kolArr=[1,2,3,4,5,0].map(k=>({k,bd:sum(F.filter(x=>x.kol===k),x=>x.bd),n:F.filter(x=>x.kol===k).length})).filter(o=>o.n);
+  chart('cKol','doughnut',{labels:kolArr.map(o=>'Kol '+(o.k||'-')+' '+KOLN[o.k]),datasets:[{data:kolArr.map(o=>o.bd),backgroundColor:kolArr.map(o=>KOLC[o.k])}]},
+    {plugins:{legend:{position:'right'},tooltip:{callbacks:{label:c=>`${c.label}: ${fmtC(c.raw)} (${fmtP(pct(c.raw,bd))}) · ${fmtN(kolArr[c.dataIndex].n)} NOA`}}}});
+
+  // DPD
+  const B=[['0 hari',0,0],['1–30',1,30],['31–60',31,60],['61–90',61,90],['91–180',91,180],['181–360',181,360],['>360',361,1e9]];
+  const dpdBD=B.map(b=>sum(F.filter(x=>x.dpd>=b[1]&&x.dpd<=b[2]),x=>x.bd)), dpdN=B.map(b=>F.filter(x=>x.dpd>=b[1]&&x.dpd<=b[2]).length);
+  chart('cDPD','bar',{labels:B.map(b=>b[0]),datasets:[{label:'Baki Debet',data:dpdBD,backgroundColor:['#2e7d32','#9ccc65','#f9a825','#ffa000','#ef6c00','#d84315','#b71c1c']}]},
+    {plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtC(c.raw)+' · '+fmtN(dpdN[c.dataIndex])+' NOA'}}},scales:{y:{ticks:{callback:v=>fmtC(v)}}}});
+
+  // NPL per cabang
+  const gc=[...group(F,'cabang')].map(([k,a])=>{const b=sum(a,x=>x.bd),n=sum(a.filter(x=>x.kol>=3),x=>x.bd);return{k,b,n,r:pct(n,b),pl:sum(a,x=>x.plafon),noa:a.length};});
+  const gcN=[...gc].sort((a,b)=>b.r-a.r);
+  $('wNPL').style.height=Math.max(280, gcN.length*24+84)+'px';
+  chart('cNPLCab','bar',{labels:gcN.map(o=>o.k),datasets:[{label:'NPL %',data:gcN.map(o=>+o.r.toFixed(2)),backgroundColor:gcN.map(o=>o.r>=5?'#c62828':o.r>=3?'#f57c00':'#00897b'),borderRadius:4,barPercentage:.8,categoryPercentage:.85}]},
+    {indexAxis:'y',layout:{padding:{right:56,top:24}},plugins:{legend:{display:false},valLbl:{fmt:v=>fmtP(v)},refLine:{value:5,label:'Batas NPL 5%'},tooltip:{callbacks:{label:c=>'NPL '+fmtP(c.raw)+' · '+fmtC(gcN[c.dataIndex].n)+' dari BD '+fmtC(gcN[c.dataIndex].b)}}},
+     scales:{x:{position:'top',ticks:{callback:v=>v+'%'},grid:{color:'#eef2f7'}},y:{ticks:{autoSkip:false,font:{size:12}},grid:{display:false}}}},[VAL_PLUGIN,REF_PLUGIN]);
+
+  // Sub Produk & Sektor — daftar peringkat (HTML)
+  const agg=(key)=>{ const tot=bd||1; return [...group(F,key)].map(([k,a])=>{ const b=sum(a,x=>x.bd); return {k,b,n:a.length,share:b/tot*100,npl:pct(sum(a.filter(x=>x.kol>=3),x=>x.bd),b)}; }).sort((a,b)=>b.b-a.b); };
+  hbars('cProduk', agg('subProduk'), i=>COLORS[i%COLORS.length]);
+  hbars('cSektor', agg('sektor'), ()=>'#00897b');
+
+  // Cabang
+  const gcP=[...gc].sort((a,b)=>b.pl-a.pl);
+  $('wCab').style.height=Math.max(300, gcP.length*34+70)+'px';
+  chart('cCabang','bar',{labels:gcP.map(o=>o.k),datasets:[{label:'Plafon',data:gcP.map(o=>o.pl),backgroundColor:'#1565c0',borderRadius:3,barPercentage:.9,categoryPercentage:.8},{label:'Baki Debet',data:gcP.map(o=>o.b),backgroundColor:'#f57c00',borderRadius:3,barPercentage:.9,categoryPercentage:.8}]},
+    {indexAxis:'y',layout:{padding:{right:70}},plugins:{legend:{position:'top',align:'start'},valLbl:{fmt:v=>fmtC(v)},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtC(c.raw),afterBody:c=>{const o=gcP[c[0].dataIndex];return ['NOA: '+fmtN(o.noa),'BD/Plafon: '+fmtP(pct(o.b,o.pl))];}}}},
+     scales:{x:{position:'top',ticks:{callback:v=>fmtC(v)},grid:{color:'#eef2f7'}},y:{ticks:{autoSkip:false,font:{size:12}},grid:{display:false}}}},[VAL_PLUGIN]);
+
+  // Tren pencairan
+  const now=new Date(), months=[];
+  for(let i=23;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); months.push(d.getFullYear()*100+d.getMonth()); }
+  const ym=d=>d.getFullYear()*100+d.getMonth();
+  const trP=months.map(()=>0), trN=months.map(()=>0);
+  F.forEach(x=>{ if(!x.tglCair) return; const i=months.indexOf(ym(x.tglCair)); if(i>-1){trP[i]+=x.plafon;trN[i]++;} });
+  const mLbl=months.map(m=>new Date(Math.floor(m/100),m%100,1).toLocaleDateString('id-ID',{month:'short',year:'2-digit'}));
+  chart('cTren','bar',{labels:mLbl,datasets:[{type:'bar',label:'Plafon Cair',data:trP,backgroundColor:'#1565c0',yAxisID:'y'},{type:'line',label:'NOA',data:trN,borderColor:'#f57c00',backgroundColor:'#f57c00',tension:.3,yAxisID:'y1'}]},
+    {plugins:{tooltip:{callbacks:{label:c=>c.dataset.label+': '+(c.datasetIndex?fmtN(c.raw):fmtC(c.raw))}}},scales:{y:{ticks:{callback:v=>fmtC(v)}},y1:{position:'right',grid:{drawOnChartArea:false}}}});
+
+  // Jatuh tempo
+  const mJ=[]; for(let i=0;i<12;i++){ const d=new Date(now.getFullYear(),now.getMonth()+i,1); mJ.push(ym(d)); }
+  const jtB=mJ.map(()=>0), jtN=mJ.map(()=>0);
+  F.forEach(x=>{ if(!x.tglJT) return; const i=mJ.indexOf(ym(x.tglJT)); if(i>-1){jtB[i]+=x.bd;jtN[i]++;} });
+  chart('cJT','bar',{labels:mJ.map(m=>new Date(Math.floor(m/100),m%100,1).toLocaleDateString('id-ID',{month:'short',year:'2-digit'})),datasets:[{label:'Baki Debet JT',data:jtB,backgroundColor:'#00897b'}]},
+    {plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtC(c.raw)+' · '+fmtN(jtN[c.dataIndex])+' NOA'}}},scales:{y:{ticks:{callback:v=>fmtC(v)}}}});
+
+  renderRekap(); page=0; renderDetail();
+}
+
+function hbars(id, items, colorFn){
+  const max=items.length?items[0].b:0;
+  $(id).innerHTML = items.length ? items.map((o,i)=>`<div class="hb-row" title="${esc(o.k)}">
+    <div class="hb-top"><div class="hb-lbl"><span class="hb-rank">${i+1}.</span>${esc(o.k)}</div>
+    <div class="hb-val">${fmtC(o.b)}<small>${fmtP(o.share)}</small></div></div>
+    <div class="hb-track"><div class="hb-fill" style="width:${max?Math.max(o.b/max*100,0.6):0}%;background:${colorFn(i)}"></div></div>
+    <div class="hb-sub">${fmtN(o.n)} NOA · NPL <span class="${o.npl>=5?'bad':''}">${fmtP(o.npl)}</span></div></div>`).join('')
+    : '<div class="hb-sub" style="padding:20px;text-align:center">Tidak ada data</div>';
+}
+/* Plugin: angka di ujung batang (horizontal) */
+const VAL_PLUGIN={id:'valLbl',afterDatasetsDraw(ch,args,opt){ const {ctx}=ch; ctx.save(); ctx.font='600 11px "Segoe UI",Arial'; ctx.fillStyle='#37474f'; ctx.textBaseline='middle';
+  ch.data.datasets.forEach((d,di)=>{ const m=ch.getDatasetMeta(di); if(m.hidden) return; m.data.forEach((bar,i)=>{ const v=d.data[i]; if(v==null) return; ctx.fillText(opt.fmt?opt.fmt(v):v, bar.x+5, bar.y); }); }); ctx.restore(); }};
+/* Plugin: garis batas (mis. NPL 5%) */
+const REF_PLUGIN={id:'refLine',afterDatasetsDraw(ch,args,opt){ const x=ch.scales.x.getPixelForValue(opt.value); const {top,bottom}=ch.chartArea; if(x<ch.chartArea.left||x>ch.chartArea.right) return; const c=ch.ctx; c.save(); c.strokeStyle='#c62828'; c.setLineDash([5,4]); c.lineWidth=1.5; c.beginPath(); c.moveTo(x,top); c.lineTo(x,bottom); c.stroke(); c.setLineDash([]); /* label di atas sumbu (area padding atas), tidak menimpa batang/angka */ c.font='700 11px "Segoe UI",Arial'; c.textAlign='center'; c.textBaseline='top'; const w=c.measureText(opt.label).width+12; c.fillStyle='#fdecea'; c.beginPath(); c.roundRect? c.roundRect(x-w/2,2,w,17,8) : c.rect(x-w/2,2,w,17); c.fill(); c.fillStyle='#c62828'; c.fillText(opt.label, x, 5); c.restore(); }};
+function chart(id,type,data,options,plugins){
+  if(charts[id]) charts[id].destroy();
+  charts[id]=new Chart($(id),{type,data,plugins:plugins||[],options:Object.assign({responsive:true,maintainAspectRatio:false,animation:{duration:300}},options)});
+}
+
+/* ---------- Rekap ---------- */
+let rekapRows=[], rekapSort={k:'bd',d:-1};
+const RK={cabang:'Cabang',capem:'Capem',produk:'Produk',subProduk:'Sub Produk',ao:'Kode AO',sektor:'Sektor Ekonomi',asuransi:'Asuransi'};
+function renderRekap(){
+  const by=$('rekapBy').value;
+  const keyFn = by==='capem' ? (x=>x.cabang+' › '+x.capem) : (x=>x[by]);
+  rekapRows=[...group(FILT,keyFn)].map(([k,a])=>{
+    const o={k,noa:a.length,pl:sum(a,x=>x.plafon),bd:sum(a,x=>x.bd),nw:sum(a,x=>x.nw),tung:sum(a,x=>x.tung)};
+    for(let i=1;i<=5;i++) o['k'+i]=sum(a.filter(x=>x.kol===i),x=>x.bd);
+    o.npl=o.k3+o.k4+o.k5; o.nplr=pct(o.npl,o.bd); o.dpkr=pct(o.k2,o.bd); return o;
+  });
+  const {k,d}=rekapSort; rekapRows.sort((a,b)=>typeof a[k]==='string'?d*a[k].localeCompare(b[k],'id'):d*(a[k]-b[k]));
+  const cols=[['k',RK[by],0],['noa','NOA',1],['pl','Plafon',1],['bd','Baki Debet',1],['nw','Nilai Wajar',1],['k1','Kol 1',1],['k2','Kol 2',1],['k3','Kol 3',1],['k4','Kol 4',1],['k5','Kol 5',1],['npl','NPL',1],['nplr','NPL %',1],['dpkr','DPK %',1],['tung','Tunggakan',1]];
+  const cell=(o,c)=>c[0]==='k'?esc(o.k):c[0]==='noa'?fmtN(o.noa):/r$/.test(c[0])?fmtP(o[c[0]]):fmtN(Math.round(o[c[0]]));
+  const T={k:'TOTAL',noa:sum(rekapRows,x=>x.noa)}; ['pl','bd','nw','k1','k2','k3','k4','k5','npl','tung'].forEach(f=>T[f]=sum(rekapRows,x=>x[f])); T.nplr=pct(T.npl,T.bd); T.dpkr=pct(T.k2,T.bd);
+  $('tRekap').innerHTML='<thead><tr><th>#</th>'+cols.map(c=>`<th class="${c[2]?'n':''}" data-k="${c[0]}">${c[1]}${rekapSort.k===c[0]?(d>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+
+    rekapRows.map((o,i)=>'<tr><td>'+(i+1)+'</td>'+cols.map(c=>`<td class="${c[2]?'n':''}"${c[0]==='nplr'&&o.nplr>=5?' style="color:#c62828;font-weight:700"':''}>${cell(o,c)}</td>`).join('')+'</tr>').join('')+
+    '</tbody><tfoot><tr><td></td>'+cols.map(c=>`<td class="${c[2]?'n':''}">${cell(T,c)}</td>`).join('')+'</tr></tfoot>';
+  $('tRekap').querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{ const kk=th.dataset.k; rekapSort={k:kk,d:rekapSort.k===kk?-rekapSort.d:(kk==='k'?1:-1)}; renderRekap(); });
+}
+$('rekapBy').onchange=renderRekap;
+$('btnExpRekap').onclick=()=>{
+  const by=$('rekapBy').value;
+  const out=rekapRows.map(o=>({[RK[by]]:o.k,NOA:o.noa,PLAFON:o.pl,BAKI_DEBET:o.bd,NILAI_WAJAR:o.nw,KOL_1:o.k1,KOL_2:o.k2,KOL_3:o.k3,KOL_4:o.k4,KOL_5:o.k5,NPL:o.npl,'NPL_%':+o.nplr.toFixed(2),'DPK_%':+o.dpkr.toFixed(2),TUNGGAKAN:o.tung}));
+  xlsxOut(out,'Rekap_'+RK[by].replace(/\s/g,'_'));
+};
+
+/* ---------- Detail ---------- */
+let page=0, detSort={k:'bd',d:-1}, detRows=[]; const PS=50;
+const DC=[['cabang','Cabang'],['capem','Capem'],['rek','Rekening'],['cif','CIF'],['nama','Nama Nasabah'],['produk','Produk'],['subProduk','Sub Produk'],['ao','AO'],['tglAwal','Tgl Awal'],['tglJT','Jatuh Tempo'],['plafon','Plafon',1],['bd','Baki Debet',1],['kol','Kol',1],['dpd','Hari Tunggak',1],['tp','Tunggak Pokok',1],['tb','Tunggak Bunga',1],['restruk','Restruk']];
+function renderDetail(){
+  const q=$('q').value.trim().toLowerCase(), qk=$('quick').value, today=new Date(), d90=new Date(today.getTime()+90*864e5);
+  detRows=FILT.filter(x=>(!q||(x.nama+' '+x.rek+' '+x.rekLama+' '+x.cif+' '+x.nik+' '+x.ao).toLowerCase().includes(q))
+    &&(!qk||(qk==='tunggak'?x.tung>0:qk==='npl'?x.kol>=3:qk==='dpk'?x.kol===2:qk==='jt'?(x.tglJT&&x.tglJT>=today&&x.tglJT<=d90):qk==='lewatjt'?(x.tglJT&&x.tglJT<today&&x.bd>0):true)));
+  const {k,d}=detSort;
+  detRows.sort((a,b)=>{ const A=a[k],B=b[k]; if(A instanceof Date||B instanceof Date) return d*((A?A.getTime():0)-(B?B.getTime():0)); if(typeof A==='string') return d*A.localeCompare(B,'id'); return d*((+A)-(+B)); });
+  const pages=Math.max(1,Math.ceil(detRows.length/PS)); if(page>=pages) page=pages-1;
+  const sl=detRows.slice(page*PS,page*PS+PS);
+  const cell=(x,c)=>{ const v=x[c[0]];
+    if(c[0]==='kol') return `<span class="pill k${v}">${v||'-'}</span>`;
+    if(c[0]==='restruk') return v?'Ya':'-';
+    if(v instanceof Date||c[0]==='tglAwal'||c[0]==='tglJT') return fmtD(v);
+    if(c[2]) return fmtN(Math.round(v)); return esc(v); };
+  $('tDetail').innerHTML='<thead><tr><th>#</th>'+DC.map(c=>`<th class="${c[2]?'n':''}" data-k="${c[0]}">${c[1]}${detSort.k===c[0]?(d>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+
+    (sl.length?sl.map((x,i)=>'<tr><td>'+(page*PS+i+1)+'</td>'+DC.map(c=>`<td class="${c[2]?'n':''}">${cell(x,c)}</td>`).join('')+'</tr>').join(''):`<tr><td colspan="${DC.length+1}" style="text-align:center;color:#6b7a90;padding:20px">Tidak ada data</td></tr>`)+'</tbody>';
+  $('tDetail').querySelectorAll('th[data-k]').forEach(th=>th.onclick=()=>{ const kk=th.dataset.k; detSort={k:kk,d:detSort.k===kk?-detSort.d:-1}; renderDetail(); });
+  $('pInfo').textContent=`${fmtN(detRows.length)} rekening · Baki debet ${fmtC(sum(detRows,x=>x.bd))} · Hal ${page+1}/${pages}`;
+}
+let qT; $('q').addEventListener('input',()=>{ clearTimeout(qT); qT=setTimeout(()=>{page=0;renderDetail();},250); });
+$('quick').onchange=()=>{page=0;renderDetail();};
+$('pPrev').onclick=()=>{ if(page>0){page--;renderDetail();} };
+$('pNext').onclick=()=>{ if((page+1)*PS<detRows.length){page++;renderDetail();} };
+$('btnExpDetail').onclick=()=>{
+  const out=detRows.map(x=>({CABANG:x.cabang,CAPEM:x.capem,REKENING_PINJAMAN:x.rek,CIF:x.cif,NIK:x.nik,NAMA_NASABAH:x.nama,ALAMAT:x.alamat,PRODUCT:x.produk,SUB_PRODUK:x.subProduk,KODE_AO:x.ao,
+    TGL_AWAL_PINJAMAN:x.tglAwal,TGL_JATUH_TEMPO:x.tglJT,SUKU_BUNGA:x.bunga,PLAFON_PINJAMAN:x.plafon,BAKI_DEBET:x.bd,NILAI_WAJAR:x.nw,KOLEKTIBILITAS:x.kol,TOT_HARI_TUNGGAK:x.dpd,
+    TUNGGAKAN_POKOK:x.tp,TUNGGAKAN_BUNGA:x.tb,SEKTOR_EKONOMI:x.sektorKode,NAMA_SEKTOR:x.sektor,DEBITUR_RESTRUK:x.restruk?'Y':'',NAMA_ASURANSI:x.asuransi,NILAI_IJP:x.ijp}));
+  xlsxOut(out,'Detail_Debitur');
+};
+function xlsxOut(rows,name){
+  const ws=XLSX.utils.json_to_sheet(rows,{cellDates:true}), wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,name.slice(0,31));
+  XLSX.writeFile(wb,name+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+/* ================= START ================= */
+function start(meta){
+  $('emptyState').classList.add('hidden'); $('dash').classList.remove('hidden');
+  const pf=periodeFromName(meta.file||'');
+  periodeTxt = pf ? 'Posisi '+fmtD(pf) : (meta.periode||periodeTxt); $('periode').textContent=periodeTxt;
+  $('status').textContent=`✅ ${meta.file} · ${fmtN(DATA.length)} rekening · dimuat ${new Date(meta.loaded).toLocaleString('id-ID')}`;
+  const noKol=DATA.filter(x=>!x.kol).length, notes=[];
+  if(meta.rowInfo) notes.push(meta.rowInfo+'.');
+  const nz=DATA.filter(x=>!x.nw).length; if(nz) notes.push(`${fmtN(nz)} rekening bernilai wajar 0 (bisa dipisahkan lewat filter Nilai Wajar).`);
+  if(meta.dateInfo) notes.push('Tanggal: '+meta.dateInfo+'.');
+  if(noKol) notes.push(`${fmtN(noKol)} rekening tidak memiliki nilai KOLEKTIBILITAS yang terbaca (ditampilkan sebagai "Tidak Diketahui").`);
+  if(notes.length){ $('warnBox').textContent='Catatan: '+notes.join(' '); $('warnBox').classList.remove('hidden'); } else $('warnBox').classList.add('hidden');
+  buildFilters(); apply();
+}
+(async()=>{
+  const saved=await loadDB();
+  if(saved&&saved.data&&saved.data.length){
+    DATA=saved.data.map(x=>Object.assign(x,{tglAwal:x.tglAwal?new Date(x.tglAwal):null,tglMulai:x.tglMulai?new Date(x.tglMulai):null,tglJT:x.tglJT?new Date(x.tglJT):null,tglCair:x.tglCair?new Date(x.tglCair):null}));
+    DATA.forEach(x=>{ if(!x.tglCair) x.tglCair=(x.tglAwal&&x.tglMulai)?(x.tglMulai>x.tglAwal?x.tglMulai:x.tglAwal):(x.tglAwal||x.tglMulai); x.subProduk=norm(x.subProduk)||'(Tanpa Sub Produk)'; x.cabang=unitName(x.cabang); if(x.sektorKode===undefined){ x.sektorKode=/^\d+$/.test(s(x.sektor))?s(x.sektor):''; } x.sektor=sektorGroup(x.sektorKode===''?null:x.sektorKode); x.capem=unitName(x.capem); x.produk=norm(x.produk)||'(Tanpa Produk)'; });
+    start(saved.meta||{file:'data tersimpan',loaded:new Date().toISOString()});
+  }
+})();
+</script>
+</body>
+</html>
